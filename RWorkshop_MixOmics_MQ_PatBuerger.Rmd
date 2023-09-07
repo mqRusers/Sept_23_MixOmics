@@ -1,0 +1,693 @@
+---
+title: "MIXOMICS - R WORKSHOP - MACQUARIE UNIVERSITY"
+author: "Pat Buerger (patrick.buerger@mq.edu.au)"
+date: '07-09-2023'
+output:
+  pdf_document:
+    extra_dependencies: subfig
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+    highlight: zenburn
+header-includes:
+- \usepackage{fancyhdr}
+- \usepackage{mathtools}
+- \usepackage{hyperref}
+- \setlength{\headheight}{33pt}
+- \setlength{\footskip}{25pt}
+- \pagestyle{fancy}
+- \renewcommand{\headrulewidth}{0.5pt}
+- \renewcommand{\footrulewidth}{0.5pt}
+- \rhead{\thepage}
+- \hypersetup{colorlinks   = true, linkcolor=blue, urlcolor  = blue}
+- \fancypagestyle{plain}{\pagestyle{fancy}}
+editor_options:
+  chunk_output_type: console
+---
+
+```{r global_options, include=FALSE}
+library(knitr)
+# global options to show by default the code, dump the figures into /Figures etc
+# change as required
+knitr::opts_chunk$set(dpi = 100, 
+                      echo=TRUE, 
+                      warning=FALSE, message=FALSE, eval = TRUE,
+                      fig.show=TRUE, fig.width= 6,fig.height= 5,fig.align='center', 
+                      out.width = '60%', fig.path= 'Figures/')
+```
+<br>
+
+###############################################################
+###############################################################
+# INTRODUCTION
+###############################################################
+<p>Abstract: </p>
+MixOmics example: Case Study of DIABLO with Breast TCGA Dataset, using PCA, PLS-DA (supervised), sparse PLS-DA (supervised + data reduction), and multiblock sparse PLS-DA (DIABLO).
+<p> **Modified code from MixOmics R package** </p>
+Source for R-code: https://mixomicsteam.github.io/mixOmics-Vignette/
+
+## Load Packages
+```{r packages, message=FALSE}
+#install.packages('markdown')
+#install.packages('mixOmics')
+#install.packages('tidyverse')
+library(mixOmics)
+library(tidyverse)
+
+```
+\
+
+## Load Data
+```{r}
+# Load data
+data(breast.TCGA)
+
+# Extract training data and name each data frame
+# Store as list
+X <- list(mRNA = breast.TCGA$data.train$mrna, 
+          miRNA = breast.TCGA$data.train$mirna, 
+          protein = breast.TCGA$data.train$protein)
+
+# Outcome
+Y <- breast.TCGA$data.train$subtype
+summary(Y)
+```
+
+<!-- New page -->     
+\pagebreak
+
+###############################################################
+###############################################################
+# Principal Component Analysis (PCA)
+###############################################################
+```{r}
+# Check data first with PCA to detect outliers and general structure of data.
+# 1 Run the method
+MyResult.pca_miRNA <- pca(X$miRNA)  
+
+MyResult.pca_mRNA <- pca(X$mRNA)  
+
+MyResult.pca_protein <- pca(X$protein)
+
+```
+
+```{r}
+## 2.1 Plot the samples
+## miRNA
+# PLOT WITH ADDITIONAL SYMBOLS
+plotIndiv(MyResult.pca_miRNA, ind.names = FALSE,
+          group = Y,
+          pch = as.factor(Y), 
+          legend = TRUE, title = 'miRNA: PCA comp 1 - 2',
+          legend.title = 'miRNA', legend.title.pch = 'miRNA')
+```
+<p style="text-align: center;">**FIGURE: miRNA PCA:** comp 1 - 2</p>
+<br>
+<br>
+
+```{r}
+## 2.2 Plot the samples
+## mRNA
+# PLOT WITH ADDITIONAL SYMBOLS
+plotIndiv(MyResult.pca_mRNA, ind.names = FALSE,
+          group = Y,
+          pch = as.factor(Y), 
+          legend = TRUE, title = 'mRNA: PCA comp 1 - 2',
+          legend.title = 'mRNA', legend.title.pch = 'mRNA')
+```
+<p style="text-align: center;">**FIGURE: mRNA PCA:** comp 1 - 2</p>
+<br>
+<br>
+
+```{r}
+## 2.3 Plot the samples
+## protein
+# PLOT WITH ADDITIONAL SYMBOLS
+plotIndiv(MyResult.pca_protein, ind.names = FALSE,
+          group = Y,
+          pch = as.factor(Y), 
+          legend = TRUE, title = 'protein: PCA comp 1 - 2',
+          legend.title = 'protein', legend.title.pch = 'protein')
+```
+<p style="text-align: center;">**FIGURE: protein PCA:** comp 1 - 2</p>
+<br>
+<br>
+
+#### PCA: Conclusion
+Data looks all right. No outliers detected. Seems to be some grouping of samples present. <br>
+-> Problem: There is some source of variation in the data that we can not explain with our strain groupings. <br>
+-> We need to have some sort of supervised analysis to resolve this. <br>
+<br>
+
+
+###############################################################
+###############################################################
+# Partial Least Squares – Discriminant Analysis (PLS-DA)
+###############################################################
+```{r}
+##### PLS-DA, sPLS-DA ####
+# 1 Run the method
+MyResult.plsda_miRNA <- plsda(X$miRNA, Y)  
+
+MyResult.plsda_mRNA <- plsda(X$mRNA, Y)  
+
+MyResult.plsda_protein <- plsda(X$protein, Y)
+```
+
+```{r}
+# sPLS-DA NEEDS TO BE TUNED AND NUMBERS OF COMPONENTS OPTIMISED. SKIPPED HERE DUE TO TIME CONSTRAINTS. SEE LINK BELOW FOR FURTHER INFORMATION:
+#https://mixomicsteam.github.io/mixOmics-Vignette/id_05.html
+
+# 2.1 Plot the samples
+plotIndiv(MyResult.plsda_miRNA, ind.names = FALSE,
+          group = Y,
+          pch = as.factor(Y), 
+          legend = TRUE, title = 'miRNA: PLS-DA comp 1 - 2',
+          legend.title = 'miRNA', legend.title.pch = 'miRNA')
+```
+<p style="text-align: center;">**FIGURE: miRNA PLS-DA:** comp 1 - 2, supervised analysis using the full data.</p>
+<br>
+<br>
+
+```{r}
+# sPLS-DA NEEDS TO BE TUNED AND NUMBERS OF COMPONENTS OPTIMISED. SKIPPED HERE DUE TO TIME CONSTRAINTS. SEE LINK BELOW FOR FURTHER INFORMATION:
+#https://mixomicsteam.github.io/mixOmics-Vignette/id_05.html
+
+# 2.2 Plot the samples
+plotIndiv(MyResult.plsda_mRNA, ind.names = FALSE,
+          group = Y,
+          pch = as.factor(Y), 
+          legend = TRUE, title = 'mRNA: PLS-DA comp 1 - 2',
+          legend.title = 'mRNA', legend.title.pch = 'mRNA')
+
+```
+<p style="text-align: center;">**FIGURE: mRNA PLS-DA:** comp 1 - 2, supervised analysis using the full data.</p>
+<br>
+<br>
+
+```{r}
+# sPLS-DA NEEDS TO BE TUNED AND NUMBERS OF COMPONENTS OPTIMISED. SKIPPED HERE DUE TO TIME CONSTRAINTS. SEE LINK BELOW FOR FURTHER INFORMATION:
+#https://mixomicsteam.github.io/mixOmics-Vignette/id_05.html
+
+# 2.3 Plot the samples
+plotIndiv(MyResult.plsda_protein, ind.names = FALSE,
+          group = Y,
+          pch = as.factor(Y), 
+          legend = TRUE, title = 'protein: PLS-DA comp 1 - 2',
+          legend.title = 'protein', legend.title.pch = 'protein')
+
+```
+<p style="text-align: center;">**FIGURE: protein PLS-DA:** comp 1 - 2, supervised analysis using the full data.</p>
+<br>
+<br>
+
+
+```{r}
+# 3.1 Plot the variables
+plotVar(MyResult.plsda_miRNA)              
+```
+<p style="text-align: center;">**FIGURE: miRNA: PLS-DA:** contributing variables to PLS-DA comp 1 - 2, supervised analysis using the full data.</p>
+<br>
+<br>
+
+```{r}
+# 3.2 Plot the variables
+plotVar(MyResult.plsda_mRNA)              
+```
+<p style="text-align: center;">**FIGURE: mRNA: PLS-DA:** contributing variables to PLS-DA comp 1 - 2, supervised analysis using the full data.</p>
+<br>
+<br>
+
+```{r}
+# 3.3 Plot the variables
+plotVar(MyResult.plsda_protein)              
+```
+<p style="text-align: center;">**FIGURE: Protein: PLS-DA:** contributing variables to PLS-DA comp 1 - 2, supervised analysis using the full data.</p>
+<br>
+<br>
+
+#### PLS-DA: Conclusion
+Lots of variable and some noise in the data. Data reduction might be beneficial using a sparse PLS-DA in order to separate groups and get a clear picture of the data and important variables. 
+<br>
+<br>
+<br>
+
+<!-- New page -->     
+\pagebreak
+
+###############################################################
+###############################################################
+# sparse Partial Least Squares – Discriminant Analysis (sPLS-DA)
+###############################################################
+```{r}
+# DATA REDUCTION APPROACH.
+#########
+# miRNA
+#########
+
+# sPLS-DA NEEDS TO BE TUNED AND NUMBERS OF COMPONENTS OPTIMISED. SKIPPED HERE DUE TO TIME CONSTRAINTS. SEE LINK BELOW FOR FURTHER INFORMATION:
+#https://mixomicsteam.github.io/mixOmics-Vignette/id_05.html
+
+#### sPLS-DA, using reduced data, TOP 15 variables
+MyResult.splsda.miRNA <- splsda(X$miRNA, Y, keepX = c(15,15)) # 1 Run the method
+
+plotIndiv(MyResult.splsda.miRNA)                   # 2 Plot the samples
+```
+<p style="text-align: center;">**FIGURE: miRNA sparse PLS-DA:** comp 1 - 2, supervised analysis using the only the most influential variables, here TOP 15.</p>
+<br>
+<br>
+
+```{r}
+plotVar(MyResult.splsda.miRNA)                     # 3 Plot the variables
+```
+<p style="text-align: center;">**FIGURE: miRNA contributing variables to sparse PLS-DA:** comp 1 - 2, supervised analysis using the only the most influential variables, here TOP 15.</p>
+<br>
+<br>
+
+```{r}
+selectVar(MyResult.splsda.miRNA, comp = 1)$value         # Selected variables on comp 1
+
+plotLoadings(MyResult.splsda.miRNA, comp = 1, method = 'mean', contrib = 'max')
+```
+<p style="text-align: center;">**FIGURE: miRNA contributing variables to sparse PLS-DA:** comp 1.</p>
+<br>
+<br>
+
+```{r}
+selectVar(MyResult.splsda.miRNA, comp = 2)$value         # Selected variables on comp 1
+
+plotLoadings(MyResult.splsda.miRNA, comp = 2, method = 'mean', contrib = 'max')
+```
+<p style="text-align: center;">**FIGURE: miRNA contributing variables to sparse PLS-DA:** comp 2.</p>
+<br>
+<br>
+
+```{r}
+# DATA REDUCTION APPROACH.
+#########
+# mRNA
+#########
+
+# sPLS-DA NEEDS TO BE TUNED AND NUMBERS OF COMPONENTS OPTIMISED. SKIPPED HERE DUE TO TIME CONSTRAINTS. SEE LINK BELOW FOR FURTHER INFORMATION:
+#https://mixomicsteam.github.io/mixOmics-Vignette/id_05.html
+
+
+#### sPLS-DA, using reduced data, TOP 15 variables
+MyResult.splsda.mRNA <- splsda(X$mRNA, Y, keepX = c(15,15)) # 1 Run the method
+
+plotIndiv(MyResult.splsda.mRNA)                   # 2 Plot the samples
+```
+<p style="text-align: center;">**FIGURE: mRNA sparse PLS-DA:** comp 1 - 2, supervised analysis using the only the most influential variables, here TOP 15.</p>
+<br>
+<br>
+
+```{r}
+plotVar(MyResult.splsda.mRNA)                     # 3 Plot the variables
+```
+<p style="text-align: center;">**FIGURE: mRNA contributing variables to sparse PLS-DA:** comp 1 - 2, supervised analysis using the only the most influential variables, here TOP 15.</p>
+<br>
+<br>
+
+```{r}
+selectVar(MyResult.splsda.mRNA, comp = 1)$value         # Selected variables on comp 1
+
+plotLoadings(MyResult.splsda.mRNA, comp = 1, method = 'mean', contrib = 'max')
+```
+<p style="text-align: center;">**FIGURE: mRNA contributing variables to sparse PLS-DA:** comp 1.</p>
+<br>
+<br>
+
+```{r}
+selectVar(MyResult.splsda.mRNA, comp = 2)$value         # Selected variables on comp 1
+
+plotLoadings(MyResult.splsda.mRNA, comp = 2, method = 'mean', contrib = 'max')
+```
+<p style="text-align: center;">**FIGURE: mRNA contributing variables to sparse PLS-DA:** comp 2.</p>
+<br>
+<br>
+
+
+```{r}
+# DATA REDUCTION APPROACH.
+#########
+# Protein
+#########
+
+# sPLS-DA NEEDS TO BE TUNED AND NUMBERS OF COMPONENTS OPTIMISED. SKIPPED HERE DUE TO TIME CONSTRAINTS. SEE LINK BELOW FOR FURTHER INFORMATION:
+#https://mixomicsteam.github.io/mixOmics-Vignette/id_05.html
+
+#### sPLS-DA, using reduced data, TOP 15 variables
+MyResult.splsda.protein <- splsda(X$protein, Y, keepX = c(15,15)) # 1 Run the method
+
+plotIndiv(MyResult.splsda.protein)                   # 2 Plot the samples
+```
+<p style="text-align: center;">**FIGURE: Protein sparse PLS-DA:** comp 1 - 2, supervised analysis using the only the most influential variables, here TOP 15.</p>
+<br>
+<br>
+
+```{r}
+plotVar(MyResult.splsda.protein)                     # 3 Plot the variables
+```
+<p style="text-align: center;">**FIGURE: Protein contributing variables to sparse PLS-DA:** comp 1 - 2, supervised analysis using the only the most influential variables, here TOP 15.</p>
+<br>
+<br>
+
+```{r}
+selectVar(MyResult.splsda.protein, comp = 1)$value         # Selected variables on comp 1
+
+plotLoadings(MyResult.splsda.protein, comp = 1, method = 'mean', contrib = 'max')
+```
+<p style="text-align: center;">**FIGURE: Protein contributing variables to sparse PLS-DA:** comp 1.</p>
+<br>
+<br>
+
+```{r}
+selectVar(MyResult.splsda.protein, comp = 2)$value         # Selected variables on comp 1
+
+plotLoadings(MyResult.splsda.protein, comp = 2, method = 'mean', contrib = 'max')
+```
+<p style="text-align: center;">**FIGURE: Protein contributing variables to sparse PLS-DA:** comp 2.</p>
+<br>
+<br>
+
+#### sPLS-DA: Conclusion
+Data reduction seems beneficial using a sparse PLS-DA in order to separate groups and get a clear picture of the data and important variables. Lets try the integrated data analysis using all three data sets.
+<br>
+<br>
+<br>
+
+<!-- New page -->     
+\pagebreak
+
+###############################################################
+###############################################################
+# Multiblock PLS-DA (DIABLO)
+###############################################################
+## Parameter choice
+### Design matrix
+```{r}
+# HERE WE LOOK AT DESIGN MATRIX WITH 0.1.
+# A full design with weights = 1 will favour the latter, but at the expense of classification accuracy, whereas a design with small weights will lead to a highly predictive signature. 
+# FOR A FULLY WEIGHTED DESIGN: use "matrix(1, ncol...", WHICH IS FOCUSSING ON EXTRACTING THE MOST CORRELATION BETWEEN DATA SETS
+design <- matrix(0.1, ncol = length(X), nrow = length(X), 
+                dimnames = list(names(X), names(X)))
+diag(design) <- 0
+design 
+
+## ---- results='hold'---------------------------------
+# How much correlation between data sets?
+pls.res1 <- pls(X$mRNA, X$protein, ncomp = 1)
+cor(pls.res1$variates$X, pls.res1$variates$Y)
+
+pls.res2 <- pls(X$mRNA, X$miRNA, ncomp = 1)
+cor(pls.res2$variates$X, pls.res2$variates$Y)
+
+pls.res3 <- pls(X$protein, X$miRNA, ncomp = 1)
+cor(pls.res3$variates$X, pls.res3$variates$Y)
+# Decent amount of correlation between data sets. The data sets taken in a pairwise manner are highly correlated, indicating that a design with weights could be chosen.
+```
+
+### Number of components
+```{r}
+## ----diablo-perf, message=FALSE, fig.cap='(ref:diablo-perf)'----
+diablo.tcga <- block.plsda(X, Y, ncomp = 5, design = design)
+
+set.seed(123) # For reproducibility, remove for your analyses
+perf.diablo.tcga = perf(diablo.tcga, validation = 'Mfold', folds = 5, nrepeat = 5)
+# The validation of the folds parameter was too high and had to be reduced.
+
+# Plot of the error rates based on weighted vote
+plot(perf.diablo.tcga)
+```
+<p style="text-align: center;">**FIGURE: Multi block PLS-DA, error rates:** based on weighted vote. Choosing the number of components. Error rate is minimum using how many dimensions? </p>
+<br>
+<br>
+
+```{r}
+## ----------------------------------------------------
+perf.diablo.tcga$choice.ncomp$WeightedVote
+
+## ----------------------------------------------------
+ncomp <- perf.diablo.tcga$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
+```
+
+
+### Number of variables to select
+```{r}
+## ---- echo = FALSE, eval = TRUE, warning=FALSE-------
+# chunk takes about 2 min to run
+set.seed(123) # for reproducibility
+test.keepX <- list(mRNA = c(5:9, seq(10, 25, 5)),
+                   miRNA = c(5:9, seq(10, 20, 2)),
+                   proteomics = c(seq(5, 25, 5)))
+
+tune.diablo.tcga <- tune.block.splsda(X, Y, ncomp = 2, 
+                              test.keepX = test.keepX, design = design,
+                              validation = 'Mfold', folds = 2, nrepeat = 1, 
+                              # use two CPUs for faster computation
+                              BPPARAM = BiocParallel::SnowParam(workers = 2),
+                              dist = "centroids.dist")
+
+
+## ----------------------------------------------------
+list.keepX <- tune.diablo.tcga$choice.keepX
+list.keepX
+```
+
+
+## Final model
+```{r}
+## ---- message = TRUE---------------------------------
+diablo.tcga <- block.splsda(X, Y, ncomp = ncomp, 
+                          keepX = list.keepX, design = design)
+#diablo.tcga   # Lists the different functions of interest related to that object
+
+## ----------------------------------------------------
+diablo.tcga$design
+
+## ---- eval = FALSE-----------------------------------
+## # mRNA variables selected on component 1
+## selectVar(diablo.tcga, block = 'mRNA', comp = 1)
+```
+
+
+## Sample plots
+### plotDiablo
+```{r}
+## variables selected on component 1
+selectVar(diablo.tcga, block = 'miRNA', comp = 1)$miRNA$name
+selectVar(diablo.tcga, block = 'mRNA', comp = 1)$mRNA$name
+selectVar(diablo.tcga, block = 'protein', comp = 1)$protein$name
+
+## ----plot-diablo, message=FALSE, fig.cap='(ref:plot-diablo)'----
+plotDiablo(diablo.tcga, ncomp = 1)
+```
+<p style="text-align: center;">**FIGURE: Multi block PLS-DA, diagnostic plot:** component 1, 95% confidence intervals are plotted. Numbers indicate correlation coefficients between the first components from each data set.</p>
+<br>
+<br>
+
+```{r}
+## variables selected on component 1
+selectVar(diablo.tcga, block = 'miRNA', comp = 2)$miRNA$name
+selectVar(diablo.tcga, block = 'mRNA', comp = 2)$mRNA$name
+selectVar(diablo.tcga, block = 'protein', comp = 2)$protein$name
+
+## ----plot-diablo, message=FALSE, fig.cap='(ref:plot-diablo)'----
+plotDiablo(diablo.tcga, ncomp = 2)
+```
+<p style="text-align: center;">**FIGURE: Multi block PLS-DA, diagnostic plot:** component 2, 95% confidence intervals are plotted. Numbers indicate correlation coefficients between the first components from each data set.</p>
+<br>
+<br>
+
+```{r}
+## ----diablo-plotindiv, message=FALSE, fig.cap='(ref:diablo-plotindiv)'----
+plotIndiv(diablo.tcga, ind.names = FALSE, legend = TRUE, 
+          title = 'TCGA, DIABLO comp 1 - 2')
+```
+<p style="text-align: center;">**FIGURE: Multi block PLS-DA, individual omes:** Check that extracted data sets can discriminate between samples: True.</p>
+<br>
+<br>
+
+```{r}
+plotIndiv(diablo.tcga, ind.names = FALSE, legend = TRUE, ellipse = TRUE, title = 'TCGA, DIABLO comp 1 - 2', block = 'average')
+```
+<p style="text-align: center;">**FIGURE: Multi block PLS-DA:** Main plot that includes all three data sets - with symbols.</p>
+<br>
+<br> 
+ 
+```{r}
+plotIndiv(diablo.tcga, ind.names = TRUE, legend = TRUE, 
+          title = 'TCGA, DIABLO comp 1 - 2', block = 'average')
+```
+<p style="text-align: center;">**FIGURE: Multi block PLS-DA:** Main plot that includes all three data sets - with individual sample names.</p>
+<br>
+<br> 
+
+### plotArrow
+```{r}
+## ----diablo-plotarrow, message=FALSE, fig.cap='(ref:diablo-plotarrow)'----
+plotArrow(diablo.tcga, ind.names = FALSE, legend = TRUE, 
+          title = 'TCGA, DIABLO comp 1 - 2')
+```
+<p style="text-align: center;">**FIGURE: arrow plot for Multi block PLS-DA:** Shows agreement between the three data sets. Some samples have a bit of variability between data sets.</p>
+<br>
+<br>
+
+### plotVar
+```{r}
+## ----diablo-plotvar, message=FALSE, fig.cap='(ref:diablo-plotvar)'----
+plotVar(diablo.tcga, var.names = FALSE, style = 'graphics', legend = TRUE, 
+        pch = c(16, 17, 15), cex = c(2,2,2), 
+        col = c('darkorchid', 'brown1', 'lightgreen'),
+        title = 'TCGA, DIABLO comp 1 - 2')
+```
+<p style="text-align: center;">**FIGURE: circle plot for Multi block PLS-DA:** Shows correlation between variables.</p>
+<br>
+<br>
+
+```{r}
+## ----diablo-plotvar, message=FALSE, fig.cap='(ref:diablo-plotvar)'-----------
+plotVar(diablo.tcga, var.names = TRUE, style = 'graphics', legend = TRUE,         pch = c(16, 17, 15), cex = c(1,1,1), 
+        col = c('darkorchid', 'brown1', 'lightgreen'),
+        title = 'TCGA, DIABLO comp 1 - 2')
+
+```
+<p style="text-align: center;">**FIGURE: circle plot for Multi block PLS-DA:** Shows correlation between variables - and names, which are overlapping unfortunately.</p>
+<br>
+<br>
+
+### circosPlot
+```{r}
+## ----diablo-circos, message=FALSE, fig.cap='(ref:diablo-circos)'----
+circosPlot(diablo.tcga, cutoff = 0.7, line = TRUE, 
+           color.cor = c("chocolate3","grey20"), size.labels = 1.5)
+```
+<p style="text-align: center;">**FIGURE: circos plot for Multi block PLS-DA:** Plot represents the correlations between variables of different types, represented on the side quadrants..</p>
+<br>
+<br>
+
+### cimDiablo
+```{r, eval=FALSE}
+## ----diablo-cim, message=FALSE, fig.width=10, fig.height=8, fig.cap='(ref:diablo-cim)'----
+# FIGURE CAN BE OUT OF BONDS, MARGINS NEED TO BE ADJUSTED..
+cimDiablo(diablo.tcga, color.blocks = c('darkorchid', 'brown1', 'lightgreen'),
+          comp = 1, margin=c(8,20), legend.position = "right")
+```
+```{r}
+# USE THIS CODE INSTEAD TO EXPORT HEATMAP
+time<-format(Sys.time(),"%d-%m-%Y")
+Title <- paste("Clustered Image Map for Multi block PLS-DA")
+FileName <- paste(Title,time,".jpg")
+jpeg(file=FileName, width = 2280, height = 1280, res = 210)
+#
+cimDiablo(diablo.tcga, color.blocks = c('darkorchid', 'brown1', 'lightgreen'), comp = 1, margin=c(8,20), legend.position = "right")
+#
+dev.off()
+```
+<p style="text-align: center;">**FIGURE: Clustered Image Map (CIM) for Multi block PLS-DA:** Shows correlation between variables - and names.</p>
+<br>
+<br>
+
+### plotLoadings
+```{r}
+## ----diablo-loading, message=FALSE, fig.cap='(ref:diablo-loading)'----
+plotLoadings(diablo.tcga, comp = 1, contrib = 'max', method = 'median')
+```
+<p style="text-align: center;">**FIGURE: SYMBIONT contributing variables to sparse PLS-DA:** comp 1.</p>
+<br>
+<br>
+
+```{r}
+## ----diablo-loading, message=FALSE, fig.cap='(ref:diablo-loading)'----
+plotLoadings(diablo.tcga, comp = 2, contrib = 'max', method = 'median')
+```
+<p style="text-align: center;">**FIGURE: SYMBIONT contributing variables to sparse PLS-DA:** comp 2.</p>
+<br>
+<br>
+
+```{r}
+## variables selected for block LIPIDS on component 1 & 2
+selectVar(diablo.tcga, block = 'miRNA', comp = 1)$miRNA$value
+selectVar(diablo.tcga, block = 'miRNA', comp = 2)$miRNA$value
+
+## variables selected for block METABOLITES on component 1 & 2
+selectVar(diablo.tcga, block = 'mRNA', comp = 1)$metabolites$value
+selectVar(diablo.tcga, block = 'mRNA', comp = 2)$metabolites$value
+
+## variables selected for block PROTEOME on component 1 & 2
+selectVar(diablo.tcga, block = 'protein', comp = 1)$protein$value
+selectVar(diablo.tcga, block = 'protein', comp = 2)$protein$value
+```
+
+
+```{r}
+## --------------------------------
+# Performance with Majority vote
+perf.diablo.tcga$MajorityVote.error.rate
+
+## --------------------------------
+# Performance with Weighted vote
+perf.diablo.tcga$WeightedVote.error.rate
+
+```
+<br>
+<br>
+
+
+## Model performance and prediction
+```{r}
+# NOT COVERED HERE
+```
+
+
+# WORKING WITH OWN DATA
+```{r OwnData, eval=FALSE}
+#getwd()
+#setwd("PATH/TO/FOLDER")
+
+# REQUIRED FORMAT:
+# -> Your samples in rows, with unique IDs
+# -> Your data in columns, with short and unique names
+
+# Load from csv file
+data_1 <- read.csv("PATH/TO/FOLDER/file1.csv", row.names = 1, header = TRUE, sep = '\t')
+
+data_2 <- read.csv("PATH/TO/FOLDER/file1.csv", row.names = 1, header = TRUE, sep = '\t')
+
+data_3 <- read.csv("PATH/TO/FOLDER/file1.csv", row.names = 1, header = TRUE, sep = '\t')
+
+# Reformat data to matrix
+data_1 <- as.matrix(data_1)
+
+data_2 <- as.matrix(data_2)
+
+data_3 <- as.matrix(data_3)
+
+# Generate list of the data sets
+X <- list(data_1 = data_1, 
+          data_2 = data_2,
+          data_3 = data_3)
+summary(X)
+
+# Load Outcome file
+data_meta <- read.csv("PATH/TO/FOLDER/MetaData.csv", header = TRUE, sep = '\t')
+
+# Reformat Outcome file
+Y_factor <- data_meta$YourFactor %>% as.factor()
+summary(Y)
+
+Y_scale <- data_meta$YourScale %>% as.numeric()
+summary(Y_scale)
+
+```
+<br>
+<br>
+
+
+<!-- New page -->     
+\pagebreak
+
+# SESSION INFO
+```{r}
+sessionInfo()
+```
